@@ -1,0 +1,27 @@
+/* apps/mobile/src/theme/globals.css */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  background-color: #0A0A1E;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Hide scrollbar but keep functionality */
+::-webkit-scrollbar {
+  display: none;
+}
+
+/* Rarity colors */
+.rarity-common { color: #888; }
+.rarity-rare { color: #3B82F6; }
+.rarity-epic { color: #8B5CF6; }
+.rarity-legendary { color: #F59E0B; }

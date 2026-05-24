@@ -1,0 +1,25 @@
+{
+  "name": "@sunny-game/constants",
+  "version": "0.1.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./game.constants": "./src/game.constants.ts",
+    "./env.data": "./src/env.data.ts",
+    "./profession.data": "./src/profession.data.ts",
+    "./card.data": "./src/card.data.ts",
+    "./quest.data": "./src/quest.data.ts",
+    "./achievement.data": "./src/achievement.data.ts"
+  },
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@sunny-game/types": "workspace:*"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  }
+}

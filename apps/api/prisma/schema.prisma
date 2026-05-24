@@ -1,0 +1,420 @@
+// apps/api/prisma/schema.prisma
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── ENUMS ─────────────────────────────────────────────
+
+enum RoomStatus {
+  WAITING
+  VOTING
+  RUNNING
+  FINISHED
+  ABANDONED
+}
+
+enum StoreType {
+  CAFE
+  CLOTHING
+  ELECTRONICS
+  AD_AGENCY
+}
+
+enum ProfessionType {
+  SOFTWARE_ENGINEERING
+  HARDWARE_ENGINEERING
+  MARKETING
+  GRAPHIC_DESIGN
+  LAWYER
+  ELECTRICAL_ENGINEER
+}
+
+// ── USER & AUTH ──────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  username     String    @unique
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  player           Player?
+  sessions         Session[]
+  achievements     Achievement[]
+  dailyQuests      DailyQuest[]
+  battlePass       BattlePassEntry?
+  guildMember      GuildMember?
+  friendsAsRequester  Friend[]         @relation("FriendRequester")
+  friendsAsReceiver   Friend[]         @relation("FriendReceiver")
+  friendRequestsSent   FriendRequest[]  @relation("RequestSender")
+  friendRequestsReceived FriendRequest[] @relation("RequestReceiver")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ── PLAYER PROGRESSION ────────────────────────────────
+
+model Player {
+  id          String @id @default(cuid())
+  userId      String @unique
+  displayName String
+
+  level Int @default(1)
+  xp    Int @default(0)
+
+  energy   Int @default(100)
+  maxEnergy Int @default(100)
+
+  intelligence  Int @default(10)
+  stamina       Int @default(10)
+  speed         Int @default(10)
+  spirit        Int @default(10)
+  agility       Int @default(10)
+  diplomacy     Int @default(10)
+
+  mainProfession      ProfessionType @default(SOFTWARE_ENGINEERING)
+  secondaryProfession ProfessionType @default(MARKETING)
+
+  cardBackSkin String @default("default")
+  cardFrame    String @default("default")
+  title        String @default("Tân Binh")
+
+  totalGames    Int @default(0)
+  totalWins     Int @default(0)
+  totalRevenue  Int @default(0)
+  highestRound  Int @default(0)
+
+  coins Int @default(500)
+  gems  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievements  Achievement[]
+  dailyQuests   DailyQuest[]
+  battlePass    BattlePassEntry?
+  roomStates    PlayerState[]
+  cardOwnership CardOwnership[]
+  guildMember   GuildMember?
+}
+
+// ── PROGRESSION ─────────────────────────────────────
+
+model Achievement {
+  id              String   @id @default(cuid())
+  playerId        String
+  userId          String
+  achievementType String
+  unlockedAt      DateTime @default(now())
+  progress        Int      @default(1)
+
+  player Player? @relation(fields: [playerId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@unique([playerId, achievementType])
+}
+
+model DailyQuest {
+  id        String   @id @default(cuid())
+  userId    String
+  playerId  String
+  questType String
+  progress  Int      @default(0)
+  target    Int
+  reward    Json
+  completed Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user   User?   @relation(fields: [userId], references: [id])
+  player Player? @relation(fields: [playerId], references: [id])
+
+  @@index([userId, expiresAt])
+}
+
+model BattlePassEntry {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  playerId     String   @unique
+  seasonId     String
+  xp           Int      @default(0)
+  tier         Int      @default(1)
+  purchased    Boolean  @default(false)
+  claimedTiers Int[]   @default([])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id])
+  player Player? @relation(fields: [playerId], references: [id])
+  season Season? @relation(fields: [seasonId], references: [id])
+}
+
+// ── GAME ROOM ────────────────────────────────────────
+
+model GameRoom {
+  id            String     @id @default(cuid())
+  hostId        String
+  inviteCode    String     @unique @default(cuid())
+  name          String     @default("Phòng của tôi")
+  status        RoomStatus @default(WAITING)
+  storeType     StoreType?
+  maxPlayers    Int        @default(5)
+  currentRound  Int        @default(0)
+  maxRounds     Int        @default(20)
+  config        Json       @default("{}")
+  winnerId      String?
+  createdAt     DateTime   @default(now())
+  startedAt     DateTime?
+  endedAt       DateTime?
+
+  players PlayerState[]
+  events  GameEvent[]
+  history RoundHistory[]
+  votes   Vote[]
+
+  @@index([inviteCode])
+  @@index([status])
+}
+
+model PlayerState {
+  id                          String   @id @default(cuid())
+  roomId                      String
+  playerId                    String
+  orderIndex                  Int
+  hp                          Int      @default(100)
+  money                       Int      @default(5000)
+  energy                      Int      @default(100)
+  maxEnergy                   Int      @default(100)
+  isReady                     Boolean  @default(false)
+  isConnected                 Boolean  @default(true)
+  hand                        Json     @default("[]")
+  handCount                   Int      @default(0)
+  lockedCardId                String?
+  slots                       Json     @default("[]")
+  effects                     Json     @default("[]")
+  consecutiveRoundsCannotPay   Int      @default(0)
+  lastActionAt                DateTime @default(now())
+
+  room   GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  player Player   @relation(fields: [playerId], references: [id])
+  history RoundHistory[]
+  votes   Vote[]
+
+  @@unique([roomId, playerId])
+  @@index([roomId])
+}
+
+model Vote {
+  id        String     @id @default(cuid())
+  roomId    String
+  playerId  String
+  storeType StoreType
+  createdAt DateTime   @default(now())
+
+  playerState PlayerState @relation(fields: [playerId], references: [id])
+  room        GameRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, playerId])
+}
+
+model GameEvent {
+  id        String   @id @default(cuid())
+  roomId    String
+  type      String
+  data      Json
+  round     Int?
+  playerId  String?
+  createdAt DateTime @default(now())
+
+  room GameRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, round])
+}
+
+model RoundHistory {
+  id            String   @id @default(cuid())
+  roomId        String
+  playerId      String
+  playerStateId String
+  round         Int
+  hand          Json
+  slots         Json
+  moneyBefore   Int
+  moneyAfter    Int
+  hpBefore      Int
+  hpAfter       Int
+  revenue       Int      @default(0)
+  costs         Int      @default(0)
+  profit        Int      @default(0)
+  customers     Int      @default(0)
+  state         String   @default("alive")
+  createdAt     DateTime @default(now())
+
+  room        GameRoom    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  playerState PlayerState @relation(fields: [playerStateId], references: [id])
+
+  @@index([roomId, round])
+}
+
+// ── CARDS ─────────────────────────────────────────────
+
+model CardOwnership {
+  id         String   @id @default(cuid())
+  playerId   String
+  cardKey    String
+  count      Int      @default(1)
+  obtainedAt DateTime @default(now())
+
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([playerId, cardKey])
+  @@index([playerId])
+}
+
+// ── SOCIAL ────────────────────────────────────────────
+
+model Friend {
+  id          String   @id @default(cuid())
+  requesterId String
+  receiverId  String
+  status      String   @default("ACCEPTED")
+  createdAt   DateTime @default(now())
+
+  requester User @relation("FriendRequester", fields: [requesterId], references: [id])
+  receiver  User @relation("FriendReceiver", fields: [receiverId], references: [id])
+
+  @@unique([requesterId, receiverId])
+}
+
+model FriendRequest {
+  id          String   @id @default(cuid())
+  senderId    String
+  receiverId  String
+  createdAt   DateTime @default(now())
+
+  sender   User @relation("RequestSender", fields: [senderId], references: [id])
+  receiver User @relation("RequestReceiver", fields: [receiverId], references: [id])
+
+  @@unique([senderId, receiverId])
+}
+
+// ── GUILD ─────────────────────────────────────────────
+
+model Guild {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  tag       String   @unique
+  level     Int      @default(1)
+  totalXP   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  members GuildMember[]
+}
+
+model GuildMember {
+  id       String   @id @default(cuid())
+  guildId  String
+  playerId String  @unique
+  userId   String  @unique
+  role     String  @default("MEMBER")
+  joinedAt DateTime @default(now())
+
+  guild  Guild  @relation(fields: [guildId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+}
+
+// ── SEASON ────────────────────────────────────────────
+
+model Season {
+  id          String   @id @default(cuid())
+  name        String
+  seasonNumber Int     @default(1)
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  totalTiers  Int      @default(50)
+  createdAt   DateTime @default(now())
+
+  bpEntries BattlePassEntry[]
+  snapshots  SeasonSnapshot[]
+}
+
+model SeasonSnapshot {
+  id          String   @id @default(cuid())
+  seasonId    String
+  season      Season   @relation(fields: [seasonId], references: [id])
+  snapshotAt  DateTime @default(now())
+  topPlayers  Json     // Array of { rank, playerId, displayName, xp, tier }
+
+  @@index([seasonId])
+}
+
+// ── ANALYTICS ─────────────────────────────────────────
+
+model DailyStats {
+  id         String   @id @default(cuid())
+  userId     String   @unique
+  date       String   // "YYYY-MM-DD"
+  gamesPlayed Int     @default(0)
+  gamesWon    Int     @default(0)
+  xpEarned   Int     @default(0)
+  coinsSpent Int     @default(0)
+  timePlayed Int     @default(0) // seconds
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([date])
+}
+
+model GameSession {
+  id           String   @id @default(cuid())
+  userId       String
+  playerId     String
+  roomId       String
+  startedAt    DateTime @default(now())
+  endedAt      DateTime?
+  duration     Int       @default(0) // seconds
+  result       String?  // "WIN" | "LOSS" | "ABANDON"
+  finalScore   Int       @default(0)
+  roundsPlayed Int       @default(0)
+  place        Int       @default(0)
+
+  @@index([userId])
+  @@index([startedAt])
+}
+
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  userId    String?
+  playerId  String?
+  eventName String
+  eventData Json     @default("{}")
+  sessionId String?
+  timestamp DateTime @default(now())
+
+  @@index([eventName, timestamp])
+  @@index([userId])
+  @@index([sessionId])
+}

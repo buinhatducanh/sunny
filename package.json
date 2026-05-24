@@ -1,0 +1,41 @@
+{
+  "name": "project-sunny",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:api": "cd apps/api && pnpm dev",
+    "dev:mobile": "cd apps/mobile && pnpm dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "db:generate": "pnpm --filter @sunny-game/api prisma:generate",
+    "db:push": "cd apps/api && prisma db push",
+    "db:migrate": "cd apps/api && prisma migrate dev",
+    "db:studio": "cd apps/api && prisma studio",
+    "seed": "tsx scripts/seed.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/pg": "^8.20.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "eslint": "^9.0.0",
+    "prisma": "^5.0.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.4.0",
+    "typescript": "^5.7.0"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^5.0.0",
+    "@prisma/client": "^5.0.0",
+    "dotenv": "^17.4.2",
+    "pg": "^8.21.0"
+  }
+}

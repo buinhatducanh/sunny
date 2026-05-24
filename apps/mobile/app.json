@@ -1,0 +1,69 @@
+{
+  "expo": {
+    "name": "Sunny Game",
+    "slug": "project-sunny",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "sunny-game",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0A0A1E"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.loop.solutions.sunnygame",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Sunny Game cần camera để chụp ảnh đại diện.",
+        "NSPhotoLibraryUsageDescription": "Sunny Game cần quyền truy cập ảnh để đổi avatar."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0A0A1E"
+      },
+      "package": "com.loop.solutions.sunnygame",
+      "versionCode": 1,
+      "permissions": [
+        "INTERNET",
+        "VIBRATE",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 24,
+            "compileSdkVersion": 34,
+            "targetSdkVersion": 34
+          },
+          "ios": {
+            "deploymentTarget": "15.1"
+          }
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "sunny-game-001"
+      }
+    }
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-native",
+    "strict": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@sunny-game/types": ["../../packages/types/src"],
+      "@sunny-game/types/*": ["../../packages/types/src/*"],
+      "@sunny-game/constants": ["../../packages/constants/src"],
+      "@sunny-game/constants/*": ["../../packages/constants/src/*"],
+      "@sunny-game/utils": ["../../packages/utils/src"],
+      "@sunny-game/utils/*": ["../../packages/utils/src/*"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  "exclude": ["node_modules"]
+}
