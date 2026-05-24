@@ -11,10 +11,9 @@ services:
   - type: web
     name: sunny-api
     runtime: node
-    region: singapore
     plan: free
-    buildCommand: corepack enable && corepack prepare pnpm@9.15.0 --activate && pnpm install && pnpm --filter @sunny-game/api prisma generate && pnpm --filter @sunny-game/api build
-    startCommand: cd apps/api && node dist/src/main.js
+    buildCommand: corepack enable && pnpm install && pnpm --filter @sunny-game/api prisma generate && pnpm build
+    startCommand: node apps/api/dist/src/main.js
     healthCheckPath: /api/v1/health/ready
     envVars:
       - key: NODE_ENV
