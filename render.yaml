@@ -1,15 +1,15 @@
 # render.yaml - Render Blueprint for Project Sunny Backend
 # Docs: https://render.com/docs/blueprint-spec
 
-database:
-  name: sunny-game-db
-  databaseName: sunny_game
-  plan: free
-  ipAllowList: []
+databases:
+  - name: sunny-db
+    plan: free
+    databaseName: sunny_game
+    ipAllowList: []
 
 services:
-  - type: web
-    name: sunny-api
+  - name: sunny-api
+    type: web
     runtime: node
     plan: free
     buildCommand: corepack enable && pnpm install && pnpm --filter @sunny-game/api prisma generate && pnpm build
@@ -20,7 +20,7 @@ services:
         value: production
       - key: DATABASE_URL
         fromDatabase:
-          name: sunny-game-db
+          name: sunny-db
           property: connectionString
       - key: JWT_SECRET
         generateValue: true
