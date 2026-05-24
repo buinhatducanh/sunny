@@ -37,23 +37,23 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.8.0"
+    "socket.io": "^4.8.0",
+    "@swc/core": "^1.15.0",
+    "swc-loader": "^0.2.7",
+    "ts-loader": "^9.5.7",
+    "webpack-merge": "^6.0.1",
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^11.0.0",
-    "@prisma/client": "^5.22.0",
-    "@swc/core": "^1.15.0",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
     "@types/passport-jwt": "^4.0.1",
     "eslint": "^9.0.0",
     "prisma": "^5.0.0",
-    "swc-loader": "^0.2.7",
-    "ts-loader": "^9.5.7",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.0",
-    "webpack-merge": "^6.0.1"
+    "typescript": "^5.7.0"
   }
 }
