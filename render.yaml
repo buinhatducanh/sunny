@@ -12,7 +12,7 @@ services:
     type: web
     runtime: node
     plan: free
-    buildCommand: corepack enable && pnpm install && pnpm --filter @sunny-game/api prisma generate && pnpm build
+    buildCommand: npm install && npx turbo run build
     startCommand: node apps/api/dist/src/main.js
     healthCheckPath: /api/v1/health/ready
     envVars:
