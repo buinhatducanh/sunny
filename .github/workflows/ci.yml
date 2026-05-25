@@ -64,7 +64,7 @@ jobs:
         with: { node-version: "22", cache: "pnpm" }
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:push
-      - run: pnpm test
+      - run: pnpm test:ci
 
   build-api:
     name: Build API

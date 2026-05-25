@@ -9,6 +9,8 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
+    "test": "pnpm --filter @sunny-game/api test:e2e",
+    "test:ci": "pnpm --filter @sunny-game/api test:e2e:ci",
     "db:generate": "pnpm --filter @sunny-game/api prisma:generate",
     "db:push": "cd apps/api && prisma db push",
     "db:migrate": "cd apps/api && prisma migrate dev",

@@ -12,12 +12,6 @@
     "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@sunny-game/types": ["packages/types/src"],
-      "@sunny-game/constants": ["packages/constants/src"],
-      "@sunny-game/utils": ["packages/utils/src"]
-    }
+    "sourceMap": true
   }
 }
