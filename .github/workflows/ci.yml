@@ -65,6 +65,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:push
       - run: pnpm test:ci
+        env:
+          DATABASE_URL: postgresql://sunny:sunny_dev_password@localhost:5432/sunny_game
+          JWT_SECRET: test-jwt-secret-for-e2e
+          NODE_ENV: test
+
 
   build-api:
     name: Build API

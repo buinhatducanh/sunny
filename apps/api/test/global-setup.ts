@@ -4,16 +4,29 @@ import { PrismaClient } from "@prisma/client";
 
 const appDir = path.resolve(__dirname, "..");
 
-// Swap .env with .env.test so NestJS ConfigModule reads test values.
-// This runs before any test workers start, so no race conditions.
+// Only swap the JWT_SECRET in .env — keep DATABASE_URL from process.env (set by
+// CI env vars or by the developer's local .env). NestJS ConfigModule reads .env
+// from disk; we inject the test JWT_SECRET without overwriting the DATABASE_URL.
 const prodEnvPath = path.join(appDir, ".env");
-const testEnvPath = path.join(appDir, ".env.test");
 const backupPath = path.join(appDir, ".env.backup.e2e");
 
 if (fs.existsSync(prodEnvPath)) {
   fs.copyFileSync(prodEnvPath, backupPath);
 }
-fs.copyFileSync(testEnvPath, prodEnvPath);
+const prodEnvContent = fs.readFileSync(prodEnvPath, "utf-8");
+
+// Inject JWT_SECRET from .env.test, keeping all other values from .env
+const testEnvPath = path.join(appDir, ".env.test");
+const testEnvContent = fs.readFileSync(testEnvPath, "utf-8");
+const jwtSecretMatch = testEnvContent.match(/^JWT_SECRET=(.*)$/m);
+if (jwtSecretMatch) {
+  const lines = prodEnvContent.split("\n");
+  const newLines = lines.map((line) => {
+    if (line.startsWith("JWT_SECRET=")) return `JWT_SECRET=${jwtSecretMatch[1]}`;
+    return line;
+  });
+  fs.writeFileSync(prodEnvPath, newLines.join("\n"));
+}
 
 export default async () => {
   const prisma = new PrismaClient({
