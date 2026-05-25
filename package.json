@@ -2,7 +2,6 @@
   "name": "project-sunny",
   "version": "0.1.0",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "dev": "turbo dev",
     "dev:api": "cd apps/api && pnpm dev",

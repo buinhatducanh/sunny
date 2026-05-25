@@ -13,7 +13,9 @@
       "resizeMode": "contain",
       "backgroundColor": "#0A0A1E"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.loop.solutions.sunnygame",
@@ -62,8 +64,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "sunny-game-001"
+        "projectId": "098b5cac-5720-4b48-ac28-deafee23adde"
       }
-    }
+    },
+    "owner": "nurat"
   }
 }

@@ -15,7 +15,7 @@ export class AchievementsController {
 
   @Get()
   @ApiOperation({ summary: "Get player's achievements with progress" })
-  async getAchievements(@CurrentUser("userId") userId: string) {
+  async getAchievements(@CurrentUser("id") userId: string) {
     return this.achievements.getPlayerAchievements(userId);
   }
 }

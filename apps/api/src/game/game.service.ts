@@ -25,6 +25,7 @@ export class GameService {
       votingTimeLimit?: number;
       isPrivate?: boolean;
     },
+    maxRounds?: number,
   ) {
     const room = await this.prisma.gameRoom.create({
       data: {
@@ -34,6 +35,7 @@ export class GameService {
           Math.max(dto.maxPlayers ?? GAME_CONSTANTS.DEFAULT_ROOM_MAX_PLAYERS, 2),
           GAME_CONSTANTS.MAX_PLAYERS,
         ),
+        maxRounds: maxRounds ?? GAME_CONSTANTS.MAX_ROUNDS,
         config: {
           roundTimeLimit: dto.roundTimeLimit ?? GAME_CONSTANTS.DEFAULT_ROUND_TIME_LIMIT,
           votingTimeLimit: dto.votingTimeLimit ?? GAME_CONSTANTS.DEFAULT_VOTING_TIME_LIMIT,

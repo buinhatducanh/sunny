@@ -21,7 +21,7 @@ export class GuildController {
   }
 
   @Get("me")
-  async getMyGuild(@CurrentUser("userId") userId: string) {
+  async getMyGuild(@CurrentUser("id") userId: string) {
     return this.guild.getPlayerGuild(userId);
   }
 
@@ -32,19 +32,19 @@ export class GuildController {
 
   @Post("create")
   async create(
-    @CurrentUser("userId") userId: string,
+    @CurrentUser("id") userId: string,
     @Body() body: { name: string; tag: string },
   ) {
     return this.guild.createGuild(userId, body.name, body.tag);
   }
 
   @Post("join/:guildId")
-  async join(@CurrentUser("userId") userId: string, @Param("guildId") guildId: string) {
+  async join(@CurrentUser("id") userId: string, @Param("guildId") guildId: string) {
     return this.guild.joinGuild(userId, guildId);
   }
 
   @Delete("leave")
-  async leave(@CurrentUser("userId") userId: string) {
+  async leave(@CurrentUser("id") userId: string) {
     return this.guild.leaveGuild(userId);
   }
 }

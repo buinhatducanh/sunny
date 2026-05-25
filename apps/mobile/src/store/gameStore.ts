@@ -43,6 +43,7 @@ interface GameStore {
 
   fetchRooms: () => Promise<void>;
   createRoom: (dto: { name?: string; maxPlayers?: number; isPrivate?: boolean }) => Promise<Room | null>;
+  createSoloPractice: (dto?: { name?: string; botCount?: number; maxRounds?: number }) => Promise<Room | null>;
   joinRoom: (roomId: string) => Promise<Room | null>;
   leaveRoom: (roomId: string) => Promise<void>;
   getRoom: (roomId: string) => Promise<Room | null>;
@@ -70,6 +71,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     try {
       const room = await api.post<Room>("/game/rooms", dto);
       set((s) => ({ rooms: [room, ...s.rooms], currentRoom: room }));
+      return room;
+    } catch {
+      return null;
+    } finally {
+      set({ isCreating: false });
+    }
+  },
+
+  createSoloPractice: async (dto) => {
+    set({ isCreating: true });
+    try {
+      const room = await api.post<Room>("/game/solo", dto ?? {});
+      set({ currentRoom: room });
       return room;
     } catch {
       return null;

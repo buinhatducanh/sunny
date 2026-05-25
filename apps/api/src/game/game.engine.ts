@@ -9,12 +9,13 @@ import { getRandomEnvironment, ENVIRONMENT_COLORS } from "@sunny-game/constants/
 import { CARD_BY_KEY } from "@sunny-game/constants/card.data";
 import { validateCardPlay } from "@sunny-game/utils/validation";
 import type { RoundPhase } from "@sunny-game/types/player.types";
-import type { StoreType } from "@sunny-game/types/card.types";
+import type { StoreType, CardItem } from "@sunny-game/types/card.types";
 import { EconomyEngine, SlotCard } from "./engines/economy.engine";
 import { CardDrawEngine } from "./engines/card-draw.engine";
 import { AchievementsService } from "../modules/achievement/achievements.service";
 import { BattlePassService } from "../modules/battlepass/battlepass.service";
 import { gameBus } from "./game-bus";
+import { BotService } from "./bots/bot.service";
 
 interface ActiveRoom {
   roomId: string;
@@ -39,6 +40,7 @@ export class GameEngine {
     private config: ConfigService,
     private achievements: AchievementsService,
     private battlepass: BattlePassService,
+    private botService: BotService,
   ) {
     this.cardDraw = new CardDrawEngine(prisma);
   }
@@ -61,6 +63,53 @@ export class GameEngine {
     }
     const active = this.getOrCreateRoom(roomId);
     active.socketMap.set(socketId, playerId);
+  }
+
+  private votingTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+  async beginVotingPhase(roomId: string) {
+    const active = this.rooms.get(roomId);
+    if (!active) return;
+
+    // Idempotent: only start once
+    if (active.phase === "VOTING_PHASE" && this.votingTimers.has(roomId)) return;
+
+    const room = await this.prisma.gameRoom.findUnique({ where: { id: roomId } });
+    const config = room?.config as { votingTimeLimit?: number } | null;
+    const votingTimeLimitSeconds = config?.votingTimeLimit ?? GAME_CONSTANTS.DEFAULT_VOTING_TIME_LIMIT;
+
+    active.phase = "VOTING_PHASE";
+
+    // Trigger bot votes immediately
+    const bots = this.botService.getBotsInRoom(roomId);
+    for (const [botId] of bots) {
+      if (!this.botService.isBot(botId)) continue;
+      const existingVote = await this.prisma.vote.findUnique({
+        where: { roomId_playerId: { roomId, playerId: botId } },
+      });
+      if (!existingVote) {
+        await this.botService.voteForBot(roomId, botId);
+      }
+    }
+
+    // Force-resolve after voting time limit
+    this.clearVotingTimer(roomId);
+    const timer = setTimeout(async () => {
+      this.votingTimers.delete(roomId);
+      const currentRoom = await this.prisma.gameRoom.findUnique({ where: { id: roomId }, select: { status: true } });
+      if (currentRoom?.status === "VOTING") {
+        await this.forceResolveVoting(roomId);
+      }
+    }, votingTimeLimitSeconds * 1000);
+    this.votingTimers.set(roomId, timer);
+  }
+
+  private clearVotingTimer(roomId: string) {
+    const existing = this.votingTimers.get(roomId);
+    if (existing) {
+      clearTimeout(existing);
+      this.votingTimers.delete(roomId);
+    }
   }
 
   async getRoomPlayers(roomId: string) {
@@ -107,6 +156,10 @@ export class GameEngine {
     const active = this.rooms.get(roomId);
     if (!active) return;
 
+    this.clearVotingTimer(roomId);
+
+    const bots = this.botService.getBotsInRoom(roomId);
+
     const votes = await this.prisma.vote.findMany({ where: { roomId } });
     const counts: Record<string, number> = {};
     for (const v of votes) counts[v.storeType] = (counts[v.storeType] ?? 0) + 1;
@@ -151,6 +204,48 @@ export class GameEngine {
         });
       }
     }
+
+    // Trigger bot card drawing and schedule bot card plays
+    for (const [botId] of bots) {
+      if (!this.botService.isBot(botId)) continue;
+      const hand = this.botService.drawBotHand(botId, active.round);
+      active.playerHands.set(botId, hand.map((c) => c.id));
+      // Schedule bot card play after a short delay
+      setTimeout(async () => {
+        try {
+          await this.botService.playBotCards(
+            roomId,
+            botId,
+            active.round,
+            async () => {
+              const allReady = await this.checkAllPlayersReady(roomId, bots);
+              if (allReady) {
+                await this.executeResolution(roomId);
+              }
+              return allReady;
+            },
+          );
+        } catch (err) {
+          console.error(`Bot ${botId} card play failed:`, err);
+        }
+      }, 500);
+    }
+  }
+
+  private async checkAllPlayersReady(roomId: string, bots: Map<string, unknown>): Promise<boolean> {
+    const active = this.rooms.get(roomId);
+    if (!active) return false;
+
+    const humanReady = [...active.playerReady.values()].every(Boolean);
+    let allBotsReady = true;
+    for (const [botId] of bots) {
+      if (!this.botService.isBotReady(botId)) {
+        allBotsReady = false;
+        break;
+      }
+    }
+
+    return humanReady && allBotsReady;
   }
 
   async forceResolveVoting(roomId: string): Promise<void> {
@@ -345,6 +440,21 @@ export class GameEngine {
     return this.rooms.get(roomId)!;
   }
 
+  /** Bot in-memory state: botId -> { hp, money, energy, streak } */
+  private botStates = new Map<string, { hp: number; money: number; energy: number; streak: number }>();
+
+  private getOrInitBotState(botId: string) {
+    if (!this.botStates.has(botId)) {
+      this.botStates.set(botId, {
+        hp: GAME_CONSTANTS.STARTING_HP,
+        money: GAME_CONSTANTS.STARTING_MONEY,
+        energy: GAME_CONSTANTS.STARTING_MAX_ENERGY,
+        streak: 0,
+      });
+    }
+    return this.botStates.get(botId)!;
+  }
+
   private async executeResolution(roomId: string) {
     const active = this.rooms.get(roomId);
     if (!active) return;
@@ -453,6 +563,75 @@ export class GameEngine {
       }
     }
 
+    // Process bot players
+    const bots = this.botService.getBotsInRoom(roomId);
+    for (const [botId] of bots) {
+      if (!this.botService.isBot(botId)) continue;
+
+      const botState = this.getOrInitBotState(botId);
+      const botSlots = this.botService.getBotSlots(botId);
+
+      const botProfile = this.botService.getProfile(botId);
+      if (!botProfile) continue;
+
+      const slotCards: SlotCard[] = botSlots
+        .map((cardKey) => {
+          if (!cardKey) return null;
+          // cardKey format: `${cardKey}_bot_${round}_${i}`
+          const match = cardKey.match(/^(.+?)_bot_/);
+          const actualCardKey = match ? match[1]! : cardKey;
+          const card = CARD_BY_KEY[actualCardKey];
+          if (!card) return null;
+          return { card, instanceId: cardKey };
+        })
+        .filter((s): s is SlotCard => s !== null);
+
+      const ctx = {
+        playerId: botId,
+        professionKey: botProfile.mainProfession,
+        stats: botProfile.stats,
+        streak: botState.streak,
+        buffs: [],
+        storeType,
+        money: botState.money,
+        hp: botState.hp,
+        energy: botState.energy,
+      };
+
+      const result = this.economyEngine.calculateRound(ctx, slotCards, active.environment, active.round);
+      const { newHP, newMoney, isDead, deathReason } = result;
+
+      const hpChange = newHP - botState.hp;
+      const moneyChange = newMoney - botState.money;
+
+      botState.hp = newHP;
+      botState.money = newMoney;
+      botState.streak = result.profit >= 0 ? botState.streak + 1 : 0;
+      botState.energy = Math.min(
+        GAME_CONSTANTS.STARTING_MAX_ENERGY,
+        botState.energy -
+          slotCards.reduce((s, sc) => s + (sc.card.energyCost ?? 0), 0) +
+          Math.floor(GAME_CONSTANTS.STARTING_MAX_ENERGY * GAME_CONSTANTS.ENERGY_RESTORE_PERCENT / 100),
+      );
+
+      roundResults.push({
+        playerId: botId,
+        displayName: botProfile.name,
+        hpChange,
+        moneyChange,
+        cardsPlayed: botSlots.filter(Boolean) as string[],
+        newHp: newHP,
+        newMoney: newMoney,
+      });
+
+      // Reset bot slots for next round
+      this.botService.resetBotForRound(botId);
+
+      if (isDead) {
+        gameBus.emit("playerDied", { roomId, playerId: botId, cause: deathReason ?? "Eliminated" });
+      }
+    }
+
     gameBus.emit("roundResolved", { roomId, roundResults });
 
     // Game over check
@@ -500,6 +679,14 @@ export class GameEngine {
         isMvp: mvpId === winnerId,
         scores,
       });
+
+      // Cleanup bot state
+      this.clearVotingTimer(roomId);
+      for (const [botId] of this.botService.getBotsInRoom(roomId)) {
+        this.botStates.delete(botId);
+      }
+      this.botService.removeBotsFromRoom(roomId);
+
       return;
     }
 
@@ -539,6 +726,33 @@ export class GameEngine {
           hand,
         });
       }
+    }
+
+    // Draw hands and schedule card plays for bots
+    const botsForPlay = this.botService.getBotsInRoom(roomId);
+    for (const [botId] of botsForPlay) {
+      if (!this.botService.isBot(botId)) continue;
+      const hand = this.botService.drawBotHand(botId, active.round);
+      active.playerHands.set(botId, hand.map((c) => c.id));
+      this.botService.resetBotForRound(botId);
+      setTimeout(async () => {
+        try {
+          await this.botService.playBotCards(
+            roomId,
+            botId,
+            active.round,
+            async () => {
+              const allReady = await this.checkAllPlayersReady(roomId, botsForPlay);
+              if (allReady) {
+                await this.executeResolution(roomId);
+              }
+              return allReady;
+            },
+          );
+        } catch (err) {
+          console.error(`Bot ${botId} card play failed:`, err);
+        }
+      }, 500);
     }
   }
 }

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Bash(node --require dotenv/config ../node_modules/prisma/build/index.js generate)",
+      "Bash(powershell -Command \"docker version\")",
+      "Bash(cmd /c \"docker version\")",
+      "Bash(powershell -NoProfile -ExecutionPolicy Bypass -Command \"docker version 2>&1 | Select-Object -First 20\")",
+      "Bash(DOCKER_HOST=tcp://localhost:2375 docker ps)",
+      "Bash(timeout 8 \"/c/Program Files/Docker/Docker/resources/bin/docker\" ps)",
+      "Bash(echo \"EXIT: $?\")"
+    ]
+  }
+}

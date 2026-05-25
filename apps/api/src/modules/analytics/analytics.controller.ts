@@ -11,13 +11,13 @@ export class AnalyticsController {
   constructor(private analytics: AnalyticsService) {}
 
   @Get("stats")
-  async getPlayerStats(@CurrentUser("userId") userId: string) {
+  async getPlayerStats(@CurrentUser("id") userId: string) {
     return this.analytics.getPlayerStats(userId);
   }
 
   @Post("track")
   async trackEvent(
-    @CurrentUser("userId") userId: string,
+    @CurrentUser("id") userId: string,
     @Body() body: { eventName: string; eventData?: Record<string, unknown> },
   ) {
     await this.analytics.trackEvent({

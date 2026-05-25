@@ -11,8 +11,8 @@
   "main": "./src/index.ts",
   "types": "./src/index.ts",
   "dependencies": {
-    "@sunny-game/types": "*",
-    "@sunny-game/constants": "*"
+    "@sunny-game/types": "workspace:*",
+    "@sunny-game/constants": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

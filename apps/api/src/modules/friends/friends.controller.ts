@@ -11,45 +11,45 @@ export class FriendsController {
   constructor(private friends: FriendsService) {}
 
   @Get()
-  async getFriends(@CurrentUser("userId") userId: string) {
+  async getFriends(@CurrentUser("id") userId: string) {
     return this.friends.getFriends(userId);
   }
 
   @Get("requests/incoming")
-  async getIncoming(@CurrentUser("userId") userId: string) {
+  async getIncoming(@CurrentUser("id") userId: string) {
     return this.friends.getIncomingRequests(userId);
   }
 
   @Get("requests/outgoing")
-  async getOutgoing(@CurrentUser("userId") userId: string) {
+  async getOutgoing(@CurrentUser("id") userId: string) {
     return this.friends.getOutgoingRequests(userId);
   }
 
   @Post("request/:userId")
   async sendRequest(
-    @CurrentUser("userId") userId: string,
+    @CurrentUser("id") userId: string,
     @Param("userId") targetId: string,
   ) {
     return this.friends.sendFriendRequest(userId, targetId);
   }
 
   @Post("accept/:requestId")
-  async accept(@CurrentUser("userId") userId: string, @Param("requestId") requestId: string) {
+  async accept(@CurrentUser("id") userId: string, @Param("requestId") requestId: string) {
     return this.friends.acceptFriendRequest(requestId, userId);
   }
 
   @Post("reject/:requestId")
-  async reject(@CurrentUser("userId") userId: string, @Param("requestId") requestId: string) {
+  async reject(@CurrentUser("id") userId: string, @Param("requestId") requestId: string) {
     return this.friends.rejectFriendRequest(requestId, userId);
   }
 
   @Delete(":friendId")
-  async remove(@CurrentUser("userId") userId: string, @Param("friendId") friendId: string) {
+  async remove(@CurrentUser("id") userId: string, @Param("friendId") friendId: string) {
     return this.friends.removeFriend(userId, friendId);
   }
 
   @Get("search")
-  async search(@CurrentUser("userId") userId: string, @Query("q") query: string) {
+  async search(@CurrentUser("id") userId: string, @Query("q") query: string) {
     if (!query || query.trim().length < 2) return [];
     return this.friends.searchPlayers(query.trim(), userId);
   }

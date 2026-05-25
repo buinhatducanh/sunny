@@ -14,6 +14,7 @@ import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger"
 import { GameService } from "./game.service";
 import { GameGateway } from "./gateways/game.gateway";
 import { MatchmakingService } from "./matchmaking.service";
+import { BotService } from "./bots/bot.service";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
 import { CurrentUser } from "../common/decorators/current-user.decorator";
 import type { StoreType } from "@sunny-game/types/card.types";
@@ -28,6 +29,7 @@ export class GameController {
     private game: GameService,
     private gateway: GameGateway,
     private matchmaking: MatchmakingService,
+    private bots: BotService,
   ) {}
 
   @Get("online")
@@ -142,5 +144,35 @@ export class GameController {
     @Body() body: { amount?: number },
   ) {
     return this.game.restoreEnergy(playerId, body.amount ?? 50);
+  }
+
+  @Post("solo")
+  @ApiOperation({ summary: "Create a solo practice room with AI bots" })
+  async createSoloPractice(
+    @CurrentUser("id") userId: string,
+    @CurrentUser("playerId") playerId: string,
+    @Body()
+    dto: {
+      name?: string;
+      botCount?: number;
+      maxRounds?: number;
+    },
+  ) {
+    const botCount = Math.min(Math.max(dto.botCount ?? 3, 1), 4);
+    const maxRounds = dto.maxRounds ?? 20;
+
+    // Create private room for solo practice
+    const room = await this.game.createRoom(userId, playerId, {
+      name: dto.name ?? "Luyện Tập",
+      maxPlayers: botCount + 1,
+      isPrivate: true,
+      roundTimeLimit: 60,
+      votingTimeLimit: 30,
+    }, maxRounds);
+
+    // Add bots to fill the room
+    const bots = await this.bots.addBotsToRoom(room.id, botCount);
+
+    return { ...room, bots };
   }
 }

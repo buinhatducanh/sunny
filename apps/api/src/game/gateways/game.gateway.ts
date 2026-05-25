@@ -13,6 +13,7 @@ import {
 import { Inject, forwardRef } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import { GameEngine } from "../game.engine";
+import { BotService } from "../bots/bot.service";
 import { gameBus } from "../game-bus";
 import { GAME_CONSTANTS } from "@sunny-game/constants/game.constants";
 import { CARD_BY_KEY } from "@sunny-game/constants/card.data";
@@ -54,7 +55,10 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
 
   private socketUserMap = new Map<string, { userId: string; playerId: string }>();
 
-  constructor(@Inject(forwardRef(() => GameEngine)) private engine: GameEngine) {}
+  constructor(
+    @Inject(forwardRef(() => GameEngine)) private engine: GameEngine,
+    private botService: BotService,
+  ) {}
 
   afterInit() {
     this.registerGameBusListeners();
@@ -196,16 +200,28 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
       const players = await this.engine.getRoomPlayers(payload.roomId);
       const roomStatus = await this.engine.getRoomStatus(payload.roomId);
 
+      // Include bot profiles if this is a solo practice room
+      const bots = [...this.botService.getBotsInRoom(payload.roomId).values()].map((b) => ({
+        playerId: b.id,
+        displayName: b.name,
+        hp: 120,
+        slots: [null, null, null, null, null],
+        isReady: false,
+        isBot: true,
+      }));
+
       // Send full room state to the joining player
       client.emit("room:state", {
         roomId: payload.roomId,
         players,
+        bots,
         status: roomStatus,
       });
 
-      // If room is in VOTING phase, emit voting UI
+      // If room is in VOTING phase, emit voting UI and start voting phase on engine
       if (roomStatus === "VOTING") {
         client.emit("votingStart", { storeTypes: STORE_TYPES });
+        await this.engine.beginVotingPhase(payload.roomId);
       }
 
       // Notify others
@@ -216,6 +232,11 @@ export class GameGateway implements OnGatewayConnection, OnGatewayDisconnect, On
         slots: players.find((p) => p.playerId === user.playerId)?.slots ?? [null, null, null, null, null],
         isReady: false,
       });
+
+      // Also emit existing bots as players who already joined
+      for (const bot of bots) {
+        client.emit("player:joined", bot);
+      }
     } catch (err) {
       client.emit("error", { message: (err as Error).message });
     }

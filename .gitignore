@@ -1,5 +1,9 @@
 node_modules/
 .pnpm-store/
+*.apk
+*.aab
+SunnyGame-debug.apk
+SunnyGame-release.apk
 dist/
 build/
 .next/
@@ -17,3 +21,4 @@ android/.gradle/
 ios/Pods/
 ios/build/
 *.iml
+node_modules

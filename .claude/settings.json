@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm install *)",
+      "Bash(pnpm db:generate)",
+      "Bash(pnpm --filter @sunny-game/types typecheck)",
+      "Bash(pnpm --filter @sunny-game/constants typecheck)",
+      "Bash(pnpm --filter @sunny-game/utils typecheck)",
+      "Bash(pnpm --filter @sunny-game/api typecheck)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker\" ps)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/com.docker.backend.exe\" status)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker\" version --format '{{.Server.Version}}')",
+      "Read(///./pipe//**)",
+      "Read(//tmp/**)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker\" compose up -d)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/docker\" version)",
+      "Bash(curl --connect-timeout 3 http://localhost:2375/version)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/bin/com.docker.cli\" compose version)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/com.docker.backend.exe\" shutdown)",
+      "Bash(\"/c/Program Files/Docker/Docker/resources/com.docker.backend.exe\" start)",
+      "Bash(\"/c/Program Files/Docker/Docker/Docker Desktop.exe\" --version)",
+      "Read(//c/Program Files/PostgreSQL/17/data/**)",
+      "WebFetch(domain:expo.dev)",
+      "WebFetch(domain:render.com)",
+      "WebFetch(domain:dashboard.render.com)"
+    ],
+    "additionalDirectories": [
+      "C:\\Program Files\\PostgreSQL\\17\\data"
+    ]
+  }
+}

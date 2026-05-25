@@ -64,6 +64,13 @@ interface RoomStateEvent {
     slots: (string | null)[];
     isReady: boolean;
   }>;
+  bots?: Array<{
+    playerId: string;
+    displayName: string;
+    hp: number;
+    slots: (string | null)[];
+    isReady: boolean;
+  }>;
   status?: string;
 }
 
@@ -125,21 +132,33 @@ interface GameBoardState {
 export const useGameBoardStore = create<GameBoardState>((set, get) => {
   // Local handlers for socket events
   function onRoomState(data: RoomStateEvent) {
-    set({
-      players: data.players.map((p) => ({
-        id: p.playerId,
-        displayName: p.displayName,
-        hp: p.hp,
-        maxHp: 100,
-        money: 5000,
-        energy: 100,
-        maxEnergy: 100,
-        slots: p.slots,
-        profession: "",
-        isAlive: p.hp > 0,
-        isReady: p.isReady,
-      })),
-    });
+    const humanPlayers = data.players.map((p) => ({
+      id: p.playerId,
+      displayName: p.displayName,
+      hp: p.hp,
+      maxHp: 100,
+      money: 5000,
+      energy: 100,
+      maxEnergy: 100,
+      slots: p.slots,
+      profession: "",
+      isAlive: p.hp > 0,
+      isReady: p.isReady,
+    }));
+    const botPlayers = (data.bots ?? []).map((b) => ({
+      id: b.playerId,
+      displayName: b.displayName,
+      hp: b.hp,
+      maxHp: 100,
+      money: 5000,
+      energy: 100,
+      maxEnergy: 100,
+      slots: b.slots,
+      profession: "",
+      isAlive: b.hp > 0,
+      isReady: b.isReady,
+    }));
+    set({ players: [...humanPlayers, ...botPlayers] });
   }
 
   function onPlayerJoined(data: PlayerJoinedEvent) {

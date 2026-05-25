@@ -15,14 +15,14 @@ export class BattlePassController {
 
   @Get()
   @ApiOperation({ summary: "Get player's battle pass status" })
-  async getBattlePass(@CurrentUser("userId") userId: string) {
+  async getBattlePass(@CurrentUser("id") userId: string) {
     return this.battlepass.getPlayerBattlePass(userId);
   }
 
   @Post("claim/:tier")
   @ApiOperation({ summary: "Claim a battle pass tier reward" })
   async claimTier(
-    @CurrentUser("userId") userId: string,
+    @CurrentUser("id") userId: string,
     @Param("tier") tier: string,
   ) {
     return this.battlepass.claimTier(userId, parseInt(tier, 10));
@@ -30,7 +30,7 @@ export class BattlePassController {
 
   @Post("purchase")
   @ApiOperation({ summary: "Purchase battle pass (IAP stub)" })
-  async purchase(@CurrentUser("userId") userId: string) {
+  async purchase(@CurrentUser("id") userId: string) {
     return this.battlepass.purchaseBattlePass(userId);
   }
 }
