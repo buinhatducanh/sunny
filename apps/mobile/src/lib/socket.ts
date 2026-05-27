@@ -2,7 +2,7 @@
 
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api/v1", "") ?? "http://localhost:3000";
+const SOCKET_URL = process.env.EXPO_PUBLIC_API_URL?.replace("/api/v1", "") ?? "http://localhost:4000";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SocketHandler = (...args: any[]) => void;

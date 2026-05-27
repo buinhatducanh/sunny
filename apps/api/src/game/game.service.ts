@@ -165,8 +165,8 @@ export class GameService {
 
     if (!room) throw new NotFoundException("Room not found");
     if (room.hostId !== userId) throw new BadRequestException("Only host can start");
-    if (room.players.length < GAME_CONSTANTS.MIN_PLAYERS) {
-      throw new BadRequestException("Need at least 2 players");
+    if (room.players.length < 1) {
+      throw new BadRequestException("Need at least 1 player");
     }
 
     const updated = await this.prisma.gameRoom.update({
@@ -179,8 +179,15 @@ export class GameService {
   }
 
   async voteStore(roomId: string, playerId: string, storeType: StoreType) {
-    const existing = await this.prisma.vote.findUnique({
+    const playerState = await this.prisma.playerState.findUnique({
       where: { roomId_playerId: { roomId, playerId } },
+    });
+    if (!playerState) throw new NotFoundException("Player not in room");
+
+    const votePlayerId = playerState.id; // Vote.playerId references PlayerState.id
+
+    const existing = await this.prisma.vote.findUnique({
+      where: { roomId_playerId: { roomId, playerId: votePlayerId } },
     });
 
     if (existing) {
@@ -190,7 +197,7 @@ export class GameService {
       });
     } else {
       await this.prisma.vote.create({
-        data: { roomId, playerId, storeType },
+        data: { roomId, playerId: votePlayerId, storeType },
       });
     }
 
